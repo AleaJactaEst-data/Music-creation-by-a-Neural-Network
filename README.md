@@ -1,12 +1,12 @@
 Requirements :
 matplotlib, pygame, pyaudio,pydot, tensorflow, pyaudio, numpy, mido, argparse
 
-Reference :
+References for the code (not working) :
 https://github.com/HackerPoet/Composer
 
 ## How does it work
 
-Data had to be deleted in order to be sent to Moodle. To have it back, just do the first second two steps.
+Data had to be deleted in order to be on Github. To have it back, just do the first second two steps.
 
 * Use the scrapping python code "python scraping.py". It will download files in data/raw
 * Run preprocess_songs.py. This will load all midi files from your midi files folder data/raw/ into data/interim/samples.npy & lengths.npy.
@@ -17,11 +17,11 @@ If you want to train it :
 
 ## How to just test it
 
-* You can test the latest model with just composer.py --model "e600/" and play with the parameters then.
+* You can test the latest model with just composer.py --model "e600/" and play with the parameters then if you have done the first two steps in "How does it work".
 
 ## Find songs
 
-You can find already predicted songs in the Songs folder
+You can find already predicted songs in the Songs folder.
 
 ## Composer
 
