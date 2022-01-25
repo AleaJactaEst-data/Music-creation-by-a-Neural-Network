@@ -8,7 +8,7 @@ https://github.com/HackerPoet/Composer
 
 Data had to be deleted in order to be on Github. To have it back, just do the first second two steps.
 
-* Use the scrapping python code "python scraping.py". It will download files in data/raw
+* Use the scrapping python code "python scraping.py". It will download files in data/raw/.
 * Run preprocess_songs.py. This will load all midi files from your midi files folder data/raw/ into data/interim/samples.npy & lengths.npy.
 If you want to train it :
    * Run train.py. This will train your network. You can continue the training by putting : train.py --continue_train "True". It will load the encoder and decoder
