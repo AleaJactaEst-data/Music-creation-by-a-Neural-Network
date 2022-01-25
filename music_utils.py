@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-Utils to edit music.
-"""
-
 import numpy as np
 
 

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Train an autoencoder model to learn to encode songs.
 """
@@ -11,33 +8,25 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import midi_utils
-import plot_utils
 import models
 
 import argparse
 
 #  Load Keras
-print("Loading keras...")
+print("Loading tensorflow...")
 import os
 import tensorflow as tf
 import tensorflow.keras
 
-print("Keras version: " + tensorflow.keras.__version__)
+print("tf.Keras version: " + tensorflow.keras.__version__)
 
-from tensorflow.keras.models import Model, load_model
-#from keras.utils import plot_model
-from tensorflow.keras.utils import plot_model
-
+from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import binary_crossentropy
-#from keras.optimizers import Adam, RMSprop
 from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 
 
-from tensorflow.python.keras.backend import eager_learning_phase_scope
-
-
-#######
+####### code for tensorflow gpu #########
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
@@ -63,74 +52,18 @@ NUM_RAND_SONGS = 10
 # network params
 DROPOUT_RATE = 0.1
 BATCHNORM_MOMENTUM = 0.9  # weighted normalization with the past
-USE_EMBEDDING = False
-USE_VAE = False
-VAE_B1 = 0.02
-VAE_B2 = 0.1
 
 #BATCH_SIZE = 350
 BATCH_SIZE = 350
 MAX_WINDOWS = 16  # the maximal number of measures a song can have
 LATENT_SPACE_SIZE = 120
-NUM_OFFSETS = 16 if USE_EMBEDDING else 1
+NUM_OFFSETS = 1
 
 K.set_image_data_format('channels_first')
 
 # Fix the random seed so that training comparisons are easier to make
 np.random.seed(0)
 random.seed(0)
-
-
-def vae_loss(x, x_decoded_mean, z_log_sigma_sq, z_mean):
-    """
-    Variational autoencoder loss function.
-    :param x:
-    :param x_decoded_mean:
-    :param z_log_sigma_sq:
-    :param z_mean:
-    :return:
-    """
-    xent_loss = binary_crossentropy(x, x_decoded_mean)
-    kl_loss = VAE_B2 * K.mean(1 + z_log_sigma_sq - K.square(z_mean) - K.exp(z_log_sigma_sq), axis=None)
-    return xent_loss - kl_loss
-
-
-def plot_losses(scores, f_name, on_top=True):
-    """
-    Plot loss.
-    :param scores:
-    :param f_name:
-    :param on_top:
-    :return:
-    """
-    plt.clf()
-    ax = plt.gca()
-    ax.yaxis.tick_right()
-    ax.yaxis.set_ticks_position('both')
-    ax.yaxis.grid(True)
-    plt.plot(scores)
-    plt.ylim([0.0, 0.009])
-    plt.xlabel('Epoch')
-    loc = ('upper right' if on_top else 'lower right')
-    plt.draw()
-    plt.savefig(f_name)
-
-
-def save_training_config(num_songs, model, learning_rate):
-    """
-    Save configuration of training.
-    :param num_songs:
-    :param model:
-    :return:
-    """
-    with open('results/config.txt', 'w') as file_out:
-        file_out.write('LEARNING_RATE:       ' + str(learning_rate) + '\n')
-        file_out.write('BATCHNORM_MOMENTUM:  ' + str(BATCHNORM_MOMENTUM) + '\n')
-        file_out.write('BATCH_SIZE:          ' + str(BATCH_SIZE) + '\n')
-        file_out.write('NUM_OFFSETS:         ' + str(NUM_OFFSETS) + '\n')
-        file_out.write('DROPOUT_RATE:        ' + str(DROPOUT_RATE) + '\n')
-        file_out.write('num_songs:           ' + str(num_songs) + '\n')
-        file_out.write('optimizer:           ' + type(model.optimizer).__name__ + '\n')
 
 
 def generate_random_songs(decoder, write_dir, random_vectors):
@@ -160,10 +93,8 @@ def calculate_and_store_pca_statistics(encoder, x_orig, y_orig, write_dir):
     :param write_dir:
     :return:
     """
-    if USE_EMBEDDING:
-        latent_x = np.squeeze(encoder.predict(x_orig))
-    else:
-        latent_x = np.squeeze(encoder(y_orig).numpy())
+
+    latent_x = np.squeeze(encoder(y_orig).numpy())
 
     latent_mean = np.mean(latent_x, axis=0)
     latent_stds = np.std(latent_x, axis=0)
@@ -197,35 +128,7 @@ def generate_normalized_random_songs(x_orig, y_orig, encoder, decoder, random_ve
     latent_vectors = latent_mean + np.dot(random_vectors * pca_values, pca_vectors)
     generate_random_songs(decoder, write_dir, latent_vectors)
 
-    title = ''
-    if '/' in write_dir:
-        title = 'Epoch: ' + write_dir.split('/')[-2][1:]
-
-    plt.clf()
-    pca_values[::-1].sort()
-    plt.title(title)
-    plt.bar(np.arange(pca_values.shape[0]), pca_values, align='center')
-    plt.draw()
-    plt.savefig(write_dir + 'latent_pca_values.png')
-
-    plt.clf()
-    plt.title(title)
-    plt.bar(np.arange(pca_values.shape[0]), latent_mean, align='center')
-    plt.draw()
-    plt.savefig(write_dir + 'latent_means.png')
-
-    plt.clf()
-    plt.title(title)
-    plt.bar(np.arange(pca_values.shape[0]), latent_stds, align='center')
-    plt.draw()
-    plt.savefig(write_dir + 'latent_stds.png')
-
-
 def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/lengths.npy', epochs_qty=EPOCHS_QTY, learning_rate=LEARNING_RATE,continue_train=CONTINUE_TRAIN):
-    """
-    Train model.
-    :return:
-    """
 
     # Create folders to save models into
     if not os.path.exists('results'):
@@ -249,7 +152,7 @@ def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/le
     assert (np.sum(y_lengths) == samples_qty)
 
     print("Preparing song samples, padding songs...")
-    x_shape = (songs_qty * NUM_OFFSETS, 1)  # for embedding
+    x_shape = (songs_qty * NUM_OFFSETS, 1) 
     x_orig = np.expand_dims(np.arange(x_shape[0]), axis=-1)
 
     y_shape = (songs_qty * NUM_OFFSETS, MAX_WINDOWS) + y_samples.shape[1:]  # (songs_qty, max number of windows, window pitch qty, window beats per measure)
@@ -280,8 +183,9 @@ def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/le
 
     #  create model
     if continue_train or GENERATE_ONLY:
-        print("Loading model...")
+        print("Loading encoder...")
         encoder = load_model('results/history/_encoder.h5')
+        print('Loading decoder...')
         decoder = load_model('results/history/_decoder.h5')
         
         
@@ -290,44 +194,22 @@ def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/le
                                                 dropout_rate=DROPOUT_RATE,
                                                 max_windows=MAX_WINDOWS,
                                                 batchnorm_momentum=BATCHNORM_MOMENTUM,
-                                                use_vae=USE_VAE,
-                                                vae_b1=VAE_B1,
-                                                use_embedding=USE_EMBEDDING,
-                                                embedding_input_shape=x_shape[1:],
-                                                embedding_shape=x_train.shape[0],
                                                 encoder=encoder,
                                                 decoder=decoder)
         
-        if USE_VAE:
-            autoencoder.compile(optimizer=Adam(lr=learning_rate), loss=vae_loss)
-        else:
-            autoencoder.compile(optimizer=RMSprop(learning_rate=learning_rate), loss='binary_crossentropy')
-    else:
-        print("Building model...")
 
-        #autoencoder = Autoencoder(max_windows=MAX_WINDOWS, batchnorm_momentum=BATCHNORM_MOMENTUM, input_shape=y_shape[1:], latent_space_size=LATENT_SPACE_SIZE, dropout_rate=0.3)
+        autoencoder.compile(optimizer=RMSprop(learning_rate=learning_rate), loss='binary_crossentropy')
+    else:
+        print("Building model from models.py...")
         autoencoder = models.create_autoencoder(input_shape=y_shape[1:],
                                                 latent_space_size=LATENT_SPACE_SIZE,
                                                 dropout_rate=DROPOUT_RATE,
                                                 max_windows=MAX_WINDOWS,
-                                                batchnorm_momentum=BATCHNORM_MOMENTUM,
-                                                use_vae=USE_VAE,
-                                                vae_b1=VAE_B1,
-                                                use_embedding=USE_EMBEDDING,
-                                                embedding_input_shape=x_shape[1:],
-                                                embedding_shape=x_train.shape[0])
+                                                batchnorm_momentum=BATCHNORM_MOMENTUM)
 
-        if USE_VAE:
-            autoencoder.compile(optimizer=Adam(lr=learning_rate), loss=vae_loss)
-        else:
-            autoencoder.compile(optimizer=RMSprop(lr=learning_rate), loss='binary_crossentropy')
 
-        # plot model with graphvis if installed
-        try:
-            a=0
-            #plot_model(model, to_file='results/model.png', show_shapes=True)
-        except OSError as e:
-            print(e)
+        autoencoder.compile(optimizer=RMSprop(lr=learning_rate), loss='binary_crossentropy')
+
 
     #  train
     print("Referencing sub-models...")
@@ -337,47 +219,24 @@ def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/le
     random_vectors = np.random.normal(0.0, 1.0, (NUM_RAND_SONGS, LATENT_SPACE_SIZE))
     np.save('data/interim/random_vectors.npy', random_vectors)
 
-    if GENERATE_ONLY:
-        print("Generating songs...")
-        generate_normalized_random_songs(x_orig, y_orig, encoder, decoder, random_vectors, 'results/')
-        for save_epoch in range(20):
-            x_test_song = x_train[save_epoch:save_epoch + 1]
-            y_song = autoencoder.predict(x_test_song, batch_size=BATCH_SIZE)[0]
-            midi_utils.samples_to_midi(y_song, 'results/gt' + str(save_epoch) + '.mid')
-        exit(0)
-
-    save_training_config(songs_qty, autoencoder, learning_rate)
     print("Training model...")
-    train_loss = []
     offset = 0
 
     for epoch in range(epochs_qty):
         print("Training epoch: ", epoch, "of", epochs_qty)
-        if USE_EMBEDDING:
-            history = autoencoder.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=1)
-        else:
-            # produce songs from its samples with a different starting point of the song each time
-            song_start_ix = 0
-            for song_ix in range(songs_qty):
-                song_end_ix = song_start_ix + y_lengths[song_ix]
-                for window_ix in range(MAX_WINDOWS):
-                    song_measure_ix = (window_ix + offset) % y_lengths[song_ix]
-                    y_train[song_ix, window_ix] = y_samples[song_start_ix + song_measure_ix]
-                song_start_ix = song_end_ix
-            assert (song_end_ix == samples_qty)
-            offset += 1
+  
+        # produce songs from its samples with a different starting point of the song each time
+        song_start_ix = 0
+        for song_ix in range(songs_qty):
+            song_end_ix = song_start_ix + y_lengths[song_ix]
+            for window_ix in range(MAX_WINDOWS):
+                song_measure_ix = (window_ix + offset) % y_lengths[song_ix]
+                y_train[song_ix, window_ix] = y_samples[song_start_ix + song_measure_ix]
+            song_start_ix = song_end_ix
+        assert (song_end_ix == samples_qty)
+        offset += 1
 
-            history = autoencoder.fit(y_train, y_train, batch_size=BATCH_SIZE, epochs=1)  # train model on reconstruction loss
-
-        # store last loss
-        loss = history.history["loss"][-1]
-        train_loss.append(loss)
-        print("Train loss: " + str(train_loss[-1]))
-
-        if WRITE_HISTORY:
-            plot_losses(train_loss, 'results/history/losses.png', True)
-        else:
-            plot_losses(train_loss, 'results/losses.png', True)
+        history = autoencoder.fit(y_train, y_train, batch_size=BATCH_SIZE, epochs=1)  # train model on reconstruction loss
 
         # save model periodically
         save_epoch = epoch + 1
@@ -395,12 +254,9 @@ def train(samples_path='data/interim/samples.npy', lengths_path='data/interim/le
 
             print("...Saved.")
 
-            if USE_EMBEDDING:
-                y_song = autoencoder.predict(x_test_song, batch_size=BATCH_SIZE)[0]
-            else:
-                y_song = autoencoder.predict(y_test_song, batch_size=BATCH_SIZE)[0]
 
-            plot_utils.plot_samples(write_dir + 'test', y_song)
+            y_song = autoencoder.predict(y_test_song, batch_size=BATCH_SIZE)[0]
+
             midi_utils.samples_to_midi(y_song, write_dir + 'test.mid')
 
             generate_normalized_random_songs(x_orig, y_orig, encoder, decoder, random_vectors, write_dir)

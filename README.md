@@ -1,31 +1,29 @@
-# Composer
-Generates video game music using neural networks.
+Requirements :
+matplotlib, pygame, pyaudio,pydot, tensorflow, pyaudio, numpy, mido, argparse
 
-https://youtu.be/UWxfnNXlVy8
+Reference :
+https://github.com/HackerPoet/Composer
 
-## How to install
+## How does it work
 
-* Install dependencies in python3 by running `pip install -r requirements.txt`.
+Data had to be deleted in order to be sent to Moodle. To have it back, just do the first second two steps.
 
-## How to run
-
-* Find some dataset to train on. More info on where to find datasets are in data/raw/README.md.
+* Use the scrapping python code "python scraping.py". It will download files in data/raw
 * Run preprocess_songs.py. This will load all midi files from your midi files folder data/raw/ into data/interim/samples.npy & lengths.npy.
-  You can point the script to a location using the --data_folder flag one or multiple times to append more folders.
-* Run train.py. This will train your network and store the progress from time to time (EPOCHS_TO_SAVE to change storing frequency).
-  Only stops if you interrupt it or after 2000 epochs.
-* Run composer.py --model "e1/" where "e1/" indicates the folder the stored model is in.
+If you want to train it :
+   * Run train.py. This will train your network. You can continue the training by putting : train.py --continue_train "True". It will load the encoder and decoder
+     but will begin as if it is the first epoch
+* Run composer.py --model "e600/" where "e600/" indicates , the folder the stored model is in.
+
+## How to just test it
+
+* You can test the latest model with just composer.py --model "e600/" and play with the parameters then.
+
+## Find songs
+
+You can find already predicted songs in the Songs folder
 
 ## Composer
-
-The Composer script will load your trained model with is
-music generator trained on the midi files you provided.
-Internally, the model tries to compress a song into only 120 numbers.
-The sliders adjust those numbers and are ordered from most
-important (left) to least important (right).  Just the
-top 40 are shown on screen.  For more details about how
-this works and other fun projects, please check out my
-YouTube channel 'CodeParade'.  Have fun making music!
 
 =========================================================
 ```

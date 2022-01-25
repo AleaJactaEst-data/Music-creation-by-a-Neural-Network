@@ -346,15 +346,7 @@ def play():
     encoder = load_model(dir_name + '_encoder.h5')
     print("Loading decoder...")
     decoder = load_model(dir_name + '_decoder.h5')
-    """
-    encoder = Model(inputs=model.input, outputs=model.get_layer('encoder').output)
-    
-    with eager_learning_phase_scope(value=0): ################### delete
-        #decoder = K.function([model.get_layer('decoder').input, K.learning_phase()],
-        #                    [model.layers[-1].output])
-        decoder = K.function([model.get_layer('decoder').input],
-                            [model.layers[-1].output])
-    """
+
 
     print("Loading gaussian/pca statistics...")
     latent_means = np.load(dir_name + sub_dir_name + 'latent_means.npy')

@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-Load songs from midi, preprocess and save them in numpy format.
-"""
-
 import midi_utils
 import os
 import music_utils
